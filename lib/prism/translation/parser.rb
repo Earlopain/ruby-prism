@@ -60,6 +60,13 @@ module Prism
       #
       def initialize(builder = Prism::Translation::Parser::Builder.new, parser: Prism)
         @parser = parser
+        unless builder.is_a?(Prism::Translation::Parser::Builder)
+          warn(<<~MSG, category: :deprecated, uplevel: 1)
+            `Prism::Translation::Parser.new` received a `#{builder.class}` instance \
+            which does not inherit from `Prism::Translation::Parser::Builder`. Doing so is deprecated \
+            and will raise an error in future versions of Prism.
+          MSG
+        end
 
         super(builder)
       end
