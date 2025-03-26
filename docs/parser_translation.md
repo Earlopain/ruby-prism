@@ -22,24 +22,9 @@ All the parsers are autoloaded, so you don't have to worry about requiring them 
 
 ### RuboCop
 
-Prism as a parser engine is directly supported since RuboCop 1.62.
+Since RuboCop 1.75, the `prism` parser translator is automatically used when analyzing Ruby 3.4 or higher.
 
-First, specify `prism` in your Gemfile:
+On earlier versions since RuboCop 1.62, `prism` can be manually configured via the `ParserEngine` setting in your `.rubocop.yml` configuration file.
 
-```ruby
-gem "prism"
-```
-
-To use Prism with RuboCop, specify `ParserEngine` and `TargetRubyVersion` in your RuboCop configuration file:
-
-```yaml
-AllCops:
-  ParserEngine: parser_prism
-  TargetRubyVersion: 3.3
-```
-
-The default value for `ParserEngine` is `parser_whitequark`, which indicates the Parser gem. You need to explicitly switch it to `parser_prism` to indicate Prism. Additionally, the value for `TargetRubyVersion` must be specified as `3.3` or higher, as Prism supports parsing versions of Ruby 3.3 and higher.
-The parser class is determined by the combination of values for `ParserEngine` and `TargetRubyVersion`. For example, if `TargetRubyVersion: 3.3`, parsing is performed by `Prism::Translation::Parser33`, and for `TargetRubyVersion 3.4`, parsing is performed by `Prism::Translation::Parser34`.
-
-For further information, please refer to the RuboCop documentation:
+For more information on how to configure it on earlier RuboCop, please refer to the official documentation:
 https://docs.rubocop.org/rubocop/configuration.html#setting-the-parser-engine
