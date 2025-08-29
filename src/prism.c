@@ -18049,6 +18049,7 @@ parse_regular_expression_errors(pm_parser_t *parser, pm_regular_expression_node_
  */
 static inline pm_node_t *
 parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, bool accepts_command_call, bool accepts_label, pm_diagnostic_id_t diag_id, uint16_t depth) {
+    printf("accepts_command_call: %d\n", accepts_command_call);
     switch (parser->current.type) {
         case PM_TOKEN_BRACKET_LEFT_ARRAY: {
             parser_lex(parser);
@@ -19109,6 +19110,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
                 if (binding_power == PM_BINDING_POWER_UNSET || binding_power >= PM_BINDING_POWER_RANGE) {
                     parse_arguments(parser, &arguments, false, PM_TOKEN_EOF, (uint16_t) (depth + 1));
+)
+                    printf("accepts_command_call: %d, args null: %d", accepts_command_call,arguments.arguments == NULL);
+
                 }
             }
 
