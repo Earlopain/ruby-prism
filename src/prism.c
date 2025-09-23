@@ -1165,6 +1165,19 @@ pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
     return NULL;
 }
 
+/**
+ * Determine if a given call node looks like a "command", which means it has
+ * arguments but does not have parentheses.
+ */
+static inline bool
+pm_call_node_command_p(const pm_call_node_t *node) {
+    return (
+        (node->opening_loc.start == NULL) &&
+        (node->block == NULL || PM_NODE_TYPE_P(node->block, PM_BLOCK_ARGUMENT_NODE)) &&
+        (node->arguments != NULL || node->block != NULL)
+    );
+}
+
 static inline void
 pm_assert_value_expression(pm_parser_t *parser, pm_node_t *node) {
     pm_node_t *void_node = pm_check_value_expression(parser, node);
@@ -21735,6 +21748,15 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
         case PM_TOKEN_KEYWORD_AND: {
             parser_lex(parser);
 
+            printf("prev_token: %s, prev: %d, cur: %d\n", pm_token_type_human(parser->previous.type), previous_binding_power, binding_power);
+
+            // if (PM_NODE_TYPE_P(node, PM_LOCAL_VARIABLE_WRITE_NODE)) {
+            //     pm_local_variable_write_node_t *cast = (pm_local_variable_write_node_t *) node;
+            //     if (PM_NODE_TYPE_P(cast->value, PM_CALL_NODE) && pm_call_node_command_p((pm_call_node_t *) cast->value)) {
+            //         PM_PARSER_ERR_TOKEN_FORMAT(parser, token, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(token.type));
+            //     }
+            // }
+
             pm_node_t *right = parse_expression(parser, binding_power, parser->previous.type == PM_TOKEN_KEYWORD_AND, false, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1));
             return (pm_node_t *) pm_and_node_create(parser, node, &token, right);
         }
@@ -22197,19 +22219,6 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
 #undef PM_PARSE_PATTERN_MULTI
 
 /**
- * Determine if a given call node looks like a "command", which means it has
- * arguments but does not have parentheses.
- */
-static inline bool
-pm_call_node_command_p(const pm_call_node_t *node) {
-    return (
-        (node->opening_loc.start == NULL) &&
-        (node->block == NULL || PM_NODE_TYPE_P(node->block, PM_BLOCK_ARGUMENT_NODE)) &&
-        (node->arguments != NULL || node->block != NULL)
-    );
-}
-
-/**
  * Parse an expression at the given point of the parser using the given binding
  * power to parse subsequent chains. If this function finds a syntax error, it
  * will append the error message to the parser's error list.
@@ -22276,7 +22285,7 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
         binding_power <= current_binding_powers.left &&
         current_binding_powers.binary
      ) {
-        node = parse_expression_infix(parser, node, binding_power, current_binding_powers.right, accepts_command_call, (uint16_t) (depth + 1));
+        node = parse_expression_infix(parser, node, current_binding_powers.left, current_binding_powers.right, accepts_command_call, (uint16_t) (depth + 1));
 
         if (context_terminator(parser->current_context->context, &parser->current)) {
             // If this token terminates the current context, then we need to
@@ -22397,6 +22406,8 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
             }
         }
     }
+
+    printf("AFTER LOOP\n");
 
     return node;
 }
