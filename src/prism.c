@@ -13324,7 +13324,6 @@ parse_value_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bo
 static inline bool
 token_begins_expression_p(pm_token_type_t type) {
     switch (type) {
-        case PM_TOKEN_EQUAL_GREATER:
         case PM_TOKEN_KEYWORD_IN:
             // We need to special case this because it is a binary operator that
             // should not be marked as beginning an expression.
@@ -14237,6 +14236,7 @@ parse_arguments_append(pm_parser_t *parser, pm_arguments_t *arguments, pm_node_t
  */
 static void
 parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_forwarding, pm_token_type_t terminator, uint16_t depth) {
+    printf("parse_arguments START: %s\n",  pm_token_type_human(parser->current.type));
     pm_binding_power_t binding_power = pm_binding_powers[parser->current.type].left;
 
     // First we need to check if the next token is one that could be the start
@@ -14258,6 +14258,8 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
         if (parsed_forwarding_arguments) {
             pm_parser_err_current(parser, PM_ERR_ARGUMENT_AFTER_FORWARDING_ELLIPSES);
         }
+
+        printf("parse_arguments: %s\n", pm_token_type_human(parser->current.type));
 
         pm_node_t *argument = NULL;
 
@@ -14286,6 +14288,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                 break;
             }
             case PM_TOKEN_UAMPERSAND: {
+                printf("UNARY '&'!\n");
                 parser_lex(parser);
                 pm_token_t operator = parser->previous;
                 pm_node_t *expression = NULL;
@@ -14306,6 +14309,8 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                 if (match1(parser, PM_TOKEN_COMMA)) {
                     pm_parser_err_current(parser, PM_ERR_ARGUMENT_AFTER_BLOCK);
                 }
+
+                printf("NEW CURRENT TOKEN: %s\n", pm_token_type_human(parser->current.type));
 
                 parsed_block_argument = true;
                 break;
@@ -14370,6 +14375,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
             }
             PRISM_FALLTHROUGH
             default: {
+                printf("DEFAULT!\n");
                 if (argument == NULL) {
                     argument = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, !parsed_first_argument, true, PM_ERR_EXPECT_ARGUMENT, (uint16_t) (depth + 1));
                 }
@@ -14470,6 +14476,8 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
         // we can accept that output as well.
         if (match1(parser, terminator)) break;
     }
+
+    printf("LOOP DONE!\n");
 }
 
 /**
@@ -15587,7 +15595,9 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool accept
             arguments->closing_loc = PM_LOCATION_TOKEN_VALUE(&parser->previous);
         } else {
             pm_accepts_block_stack_push(parser, true);
+            printf("WITH PAREN RIGHT!\n");
             parse_arguments(parser, arguments, accepts_block, PM_TOKEN_PARENTHESIS_RIGHT, (uint16_t) (depth + 1));
+            printf("DONE PAREN RIGHT: current token: %s\n", pm_token_type_human(parser->current.type));
 
             if (!accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
                 PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_ARGUMENT_TERM_PAREN, pm_token_type_human(parser->current.type));
@@ -15605,7 +15615,9 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool accept
         // If we get here, then the subsequent token cannot be used as an infix
         // operator. In this case we assume the subsequent token is part of an
         // argument to this method call.
+        printf("WITH COMMAND CALL!\n");
         parse_arguments(parser, arguments, accepts_block, PM_TOKEN_EOF, (uint16_t) (depth + 1));
+        printf("DONE COMMAND CALL! current token: %s\n", pm_token_type_human(parser->current.type));
 
         // If we have done with the arguments and still not consumed the comma,
         // then we have a trailing comma where we need to check whether it is
@@ -15620,7 +15632,7 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool accept
     // If we're at the end of the arguments, we can now check if there is a block
     // node that starts with a {. If there is, then we can parse it and add it to
     // the arguments.
-    if (accepts_block) {
+    if (false) {
         pm_block_node_t *block = NULL;
 
         if (accept1(parser, PM_TOKEN_BRACE_LEFT)) {
@@ -18561,6 +18573,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 match1(parser, PM_TOKEN_BRACE_LEFT)
             ) {
                 pm_arguments_t arguments = { 0 };
+                printf("NEVER REACHED 9\n");
                 parse_arguments_list(parser, &arguments, true, accepts_command_call, (uint16_t) (depth + 1));
                 return (pm_node_t *) pm_call_node_fcall_create(parser, &constant, &arguments);
             }
@@ -18661,6 +18674,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 pm_call_node_t *call = (pm_call_node_t *) node;
                 pm_arguments_t arguments = { 0 };
 
+                printf("START parse_arguments_list -> parse_expression_prefix 2\n");
                 if (parse_arguments_list(parser, &arguments, true, accepts_command_call, (uint16_t) (depth + 1))) {
                     // Since we found arguments, we need to turn off the
                     // variable call bit in the flags.
@@ -18677,6 +18691,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     }
                     call->base.location.end = end;
                 }
+                printf("DONE parse_arguments_list -> parse_expression_prefix 2. current token: %s\n", pm_token_type_human(parser->current.type));
             } else {
                 // Otherwise, we know the identifier is in the local table. This
                 // can still be a method call if it is followed by arguments or
@@ -18687,7 +18702,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     match1(parser, PM_TOKEN_BRACE_LEFT)
                 ) {
                     pm_arguments_t arguments = { 0 };
+                    printf("START parse_arguments_list -> parse_expression_prefix\n");
                     parse_arguments_list(parser, &arguments, true, accepts_command_call, (uint16_t) (depth + 1));
+                    printf("DONE parse_arguments_list -> parse_expression_prefix\n");
                     pm_call_node_t *fcall = pm_call_node_fcall_create(parser, &identifier, &arguments);
 
                     if (PM_NODE_TYPE_P(node, PM_IT_LOCAL_VARIABLE_READ_NODE)) {
@@ -19239,6 +19256,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
             pm_token_t keyword = parser->previous;
             pm_arguments_t arguments = { 0 };
+            printf("NEVER REACHED 8!\n");
             parse_arguments_list(parser, &arguments, true, accepts_command_call, (uint16_t) (depth + 1));
 
             if (
@@ -19256,6 +19274,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
             pm_token_t keyword = parser->previous;
             pm_arguments_t arguments = { 0 };
+            printf("NEVER REACHED 7!\n");
             parse_arguments_list(parser, &arguments, false, accepts_command_call, (uint16_t) (depth + 1));
 
             // It's possible that we've parsed a block argument through our
@@ -21889,6 +21908,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
 
             // This if statement handles the foo.() syntax.
             if (match1(parser, PM_TOKEN_PARENTHESIS_LEFT)) {
+                printf("NEVER REACHED 6!\n");
                 parse_arguments_list(parser, &arguments, true, false, (uint16_t) (depth + 1));
                 return (pm_node_t *) pm_call_node_shorthand_create(parser, node, &operator, &arguments);
             }
@@ -21937,6 +21957,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 }
             }
 
+            printf("NEVER REACHED 5!\n");
             parse_arguments_list(parser, &arguments, true, accepts_command_call, (uint16_t) (depth + 1));
             pm_call_node_t *call = pm_call_node_call_create(parser, node, &operator, &message, &arguments);
 
@@ -22053,6 +22074,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                         pm_token_t message = parser->previous;
                         pm_arguments_t arguments = { 0 };
 
+                        printf("NEVER REACHED 4!\n");
                         parse_arguments_list(parser, &arguments, true, accepts_command_call, (uint16_t) (depth + 1));
                         path = (pm_node_t *) pm_call_node_call_create(parser, node, &delimiter, &message, &arguments);
                     } else {
@@ -22077,6 +22099,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     // If we have an identifier following a '::' operator, then it is for
                     // sure a method call.
                     pm_arguments_t arguments = { 0 };
+                    printf("NEVER REACHED 3!\n");
                     parse_arguments_list(parser, &arguments, true, accepts_command_call, (uint16_t) (depth + 1));
                     pm_call_node_t *call = pm_call_node_call_create(parser, node, &delimiter, &message, &arguments);
 
@@ -22091,6 +22114,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     // If we have a parenthesis following a '::' operator, then it is the
                     // method call shorthand. That would look like Foo::(bar).
                     pm_arguments_t arguments = { 0 };
+                    printf("NEVER REACHED 2!\n");
                     parse_arguments_list(parser, &arguments, true, false, (uint16_t) (depth + 1));
 
                     return (pm_node_t *) pm_call_node_shorthand_create(parser, node, &delimiter, &arguments);
