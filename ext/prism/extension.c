@@ -199,7 +199,21 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
         if (!NIL_P(value)) {
             const char *version = check_string(value);
 
-            if (!pm_options_version_set(options, version, RSTRING_LEN(value))) {
+            if (RSTRING_LEN(value) == 7 && strncmp(version, "current", 7) == 0) {
+                VALUE current_ruby_value = rb_const_get(rb_cObject, rb_intern("RUBY_VERSION"));
+                const char *current_version = RSTRING_PTR(current_ruby_value);
+                if (
+                    strncmp(current_version, "2.7", 3) == 0 || strncmp(current_version, "3.0", 3) == 0 ||
+                    strncmp(current_version, "3.1", 3) == 0 || strncmp(current_version, "3.2", 3) == 0
+                ) {
+                    // Requested to parse as a version prism will never support.
+                    rb_raise(rb_eArgError, "invalid version: Requested to parse as `version: 'current'` but Prism does not support Ruby %" PRIsVALUE " syntax", current_ruby_value);
+                }
+
+                if (!pm_options_version_set(options, current_version, 3)) {
+                    rb_raise(rb_eArgError, "invalid version: Requested to parse as `version: 'current'` but Prism does not know about Ruby %" PRIsVALUE " syntax. Please update the `prism` gem", current_ruby_value);
+                }
+            } else if (!pm_options_version_set(options, version, RSTRING_LEN(value))) {
                 rb_raise(rb_eArgError, "invalid version: %" PRIsVALUE, value);
             }
         }
@@ -888,7 +902,7 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
  *       version of Ruby syntax (which you can trigger with `nil` or
  *       `"latest"`). You may also restrict the syntax to a specific version of
  *       Ruby, e.g., with `"3.3.0"`. To parse with the same syntax version that
- *       the current Ruby is running use `version: RUBY_VERSION`. Raises
+ *       the current Ruby is running use `version: "current"`. Raises
  *       ArgumentError if the version is not currently supported by Prism.
  */
 static VALUE
