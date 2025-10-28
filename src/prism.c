@@ -13972,8 +13972,13 @@ parse_statements(pm_parser_t *parser, pm_context_t context, uint16_t depth) {
     // immediately follows the current token.
     context_push(parser, context);
 
+    printf("parse_statements context: %s, token: %s\n", context_human(context), pm_token_type_human(parser->current.type));
+
     while (true) {
         pm_node_t *node = parse_expression(parser, PM_BINDING_POWER_STATEMENT, true, false, PM_ERR_CANNOT_PARSE_EXPRESSION, (uint16_t) (depth + 1));
+
+        printf("loop %s, token %s\n", pm_node_type_to_str(node->type), pm_token_type_human(parser->current.type));
+
         pm_statements_node_body_append(parser, statements, node, true);
 
         // If we're recovering from a syntax error, then we need to stop parsing
@@ -14031,6 +14036,7 @@ parse_statements(pm_parser_t *parser, pm_context_t context, uint16_t depth) {
             // This is an inlined version of accept1 because the error that we
             // want to add has varargs. If this happens again, we should
             // probably extract a helper function.
+            printf("HERE2!\n");
             PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(parser->current.type));
             parser->previous.start = parser->previous.end;
             parser->previous.type = PM_TOKEN_MISSING;
@@ -18434,6 +18440,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             // If we didn't find a terminator and we didn't find a right
             // parenthesis, then this is a syntax error.
             if (!terminator_found && !match1(parser, PM_TOKEN_EOF)) {
+                printf("HERE3!\n");
                 PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(parser->current.type));
             }
 
@@ -18465,6 +18472,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 } else if (!match1(parser, PM_TOKEN_EOF)) {
                     // If we're at the end of the file, then we're going to add
                     // an error after this for the ) anyway.
+                    printf("HERE4!\n");
                     PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(parser->current.type));
                 }
             }
@@ -19241,6 +19249,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
                     // Reject `foo && return bar`.
                     if (!accepts_command_call && arguments.arguments != NULL) {
+                        printf("HERE5!\n");
                         PM_PARSER_ERR_TOKEN_FORMAT(parser, next, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(next.type));
                     }
                 }
@@ -19653,7 +19662,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     context_push(parser, PM_CONTEXT_RESCUE_MODIFIER);
 
                     pm_token_t rescue_keyword = parser->previous;
-                    pm_node_t *value = parse_expression(parser, pm_binding_powers[PM_TOKEN_KEYWORD_RESCUE_MODIFIER].right, false, false, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
+                    pm_node_t *value = parse_expression(parser, PM_BINDING_POWER_DEFINED, false, false, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
                     context_pop(parser);
 
                     statement = (pm_node_t *) pm_rescue_modifier_node_create(parser, statement, &rescue_keyword, value);
@@ -20897,7 +20906,7 @@ parse_assignment_value(pm_parser_t *parser, pm_binding_power_t previous_binding_
         pm_token_t rescue = parser->current;
         parser_lex(parser);
 
-        pm_node_t *right = parse_expression(parser, pm_binding_powers[PM_TOKEN_KEYWORD_RESCUE_MODIFIER].right, false, false, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
+        pm_node_t *right = parse_expression(parser, PM_BINDING_POWER_DEFINED, false, false, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
         context_pop(parser);
 
         return (pm_node_t *) pm_rescue_modifier_node_create(parser, value, &rescue, right);
@@ -21003,7 +21012,7 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
             }
         }
 
-        pm_node_t *right = parse_expression(parser, pm_binding_powers[PM_TOKEN_KEYWORD_RESCUE_MODIFIER].right, accepts_command_call_inner, false, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
+        pm_node_t *right = parse_expression(parser, PM_BINDING_POWER_DEFINED, accepts_command_call_inner, false, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
         context_pop(parser);
 
         return (pm_node_t *) pm_rescue_modifier_node_create(parser, value, &rescue, right);
@@ -21877,6 +21886,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 case PM_RESCUE_MODIFIER_NODE: {
                     pm_rescue_modifier_node_t *cast = (pm_rescue_modifier_node_t *) node;
                     if (PM_NODE_TYPE_P(cast->rescue_expression, PM_MATCH_PREDICATE_NODE) || PM_NODE_TYPE_P(cast->rescue_expression, PM_MATCH_REQUIRED_NODE)) {
+                        printf("HERE!\n");
                         PM_PARSER_ERR_TOKEN_FORMAT(parser, operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(operator.type));
                     }
                     break;
@@ -21930,6 +21940,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 case PM_RESCUE_MODIFIER_NODE: {
                     pm_rescue_modifier_node_t *cast = (pm_rescue_modifier_node_t *) node;
                     if (PM_NODE_TYPE_P(cast->rescue_expression, PM_MATCH_PREDICATE_NODE) || PM_NODE_TYPE_P(cast->rescue_expression, PM_MATCH_REQUIRED_NODE)) {
+                        printf("HERE7!\n");
                         PM_PARSER_ERR_TOKEN_FORMAT(parser, operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_type_human(operator.type));
                     }
                     break;
@@ -22264,6 +22275,8 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
     }
 
     pm_node_t *node = parse_expression_prefix(parser, binding_power, accepts_command_call, accepts_label, diag_id, depth);
+
+    printf("parse_expression: parse_expression_prefix -> NODE %s\n", pm_node_type_to_str(node->type));
 
     switch (PM_NODE_TYPE(node)) {
         case PM_MISSING_NODE:

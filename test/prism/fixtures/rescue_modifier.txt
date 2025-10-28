@@ -5,3 +5,17 @@ a = b rescue c if d
 a, = b rescue c if d
 
 def a = b rescue c if d
+
+a rescue b in c
+
+x = a rescue b
+
+x = b in c
+
+def f = a rescue b
+
+def f = b in c
+
+def f = a rescue b in c
+
+x = a rescue b in c
