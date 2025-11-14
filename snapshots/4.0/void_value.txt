@@ -1,0 +1,59 @@
+@ ProgramNode (location: (1,0)-(1,47))
+├── flags: ∅
+├── locals: [:x]
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,47))
+    ├── flags: ∅
+    └── body: (length: 1)
+        └── @ LocalVariableWriteNode (location: (1,0)-(1,47))
+            ├── flags: newline
+            ├── name: :x
+            ├── depth: 0
+            ├── name_loc: (1,0)-(1,1) = "x"
+            ├── value:
+            │   @ BeginNode (location: (1,4)-(1,47))
+            │   ├── flags: ∅
+            │   ├── begin_keyword_loc: (1,4)-(1,9) = "begin"
+            │   ├── statements:
+            │   │   @ StatementsNode (location: (1,10)-(1,16))
+            │   │   ├── flags: ∅
+            │   │   └── body: (length: 1)
+            │   │       └── @ ReturnNode (location: (1,10)-(1,16))
+            │   │           ├── flags: newline
+            │   │           ├── keyword_loc: (1,10)-(1,16) = "return"
+            │   │           └── arguments: ∅
+            │   ├── rescue_clause:
+            │   │   @ RescueNode (location: (1,18)-(1,30))
+            │   │   ├── flags: ∅
+            │   │   ├── keyword_loc: (1,18)-(1,24) = "rescue"
+            │   │   ├── exceptions: (length: 0)
+            │   │   ├── operator_loc: ∅
+            │   │   ├── reference: ∅
+            │   │   ├── then_keyword_loc: ∅
+            │   │   ├── statements:
+            │   │   │   @ StatementsNode (location: (1,26)-(1,30))
+            │   │   │   ├── flags: ∅
+            │   │   │   └── body: (length: 1)
+            │   │   │       └── @ StringNode (location: (1,26)-(1,30))
+            │   │   │           ├── flags: newline
+            │   │   │           ├── opening_loc: (1,26)-(1,27) = "\""
+            │   │   │           ├── content_loc: (1,27)-(1,29) = "OK"
+            │   │   │           ├── closing_loc: (1,29)-(1,30) = "\""
+            │   │   │           └── unescaped: "OK"
+            │   │   └── subsequent: ∅
+            │   ├── else_clause:
+            │   │   @ ElseNode (location: (1,32)-(1,47))
+            │   │   ├── flags: ∅
+            │   │   ├── else_keyword_loc: (1,32)-(1,36) = "else"
+            │   │   ├── statements:
+            │   │   │   @ StatementsNode (location: (1,37)-(1,43))
+            │   │   │   ├── flags: ∅
+            │   │   │   └── body: (length: 1)
+            │   │   │       └── @ ReturnNode (location: (1,37)-(1,43))
+            │   │   │           ├── flags: newline
+            │   │   │           ├── keyword_loc: (1,37)-(1,43) = "return"
+            │   │   │           └── arguments: ∅
+            │   │   └── end_keyword_loc: (1,44)-(1,47) = "end"
+            │   ├── ensure_clause: ∅
+            │   └── end_keyword_loc: (1,44)-(1,47) = "end"
+            └── operator_loc: (1,2)-(1,3) = "="

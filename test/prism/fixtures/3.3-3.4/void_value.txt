@@ -1,0 +1,3 @@
+x = begin foo; rescue; return; else return end
+
+x = case when 1; return else return end

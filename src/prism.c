@@ -1060,15 +1060,23 @@ pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
 
                     node = (pm_node_t *) cast->ensure_clause;
                 } else if (cast->rescue_clause != NULL) {
-                    if (cast->statements == NULL) return NULL;
+                    // https://bugs.ruby-lang.org/issues/21669
+                    if (cast->else_clause == NULL || parser->version < PM_OPTIONS_VERSION_CRUBY_4_0) {
+                        if (cast->statements == NULL) return NULL;
 
-                    pm_node_t *vn = pm_check_value_expression(parser, (pm_node_t *) cast->statements);
-                    if (vn == NULL) return NULL;
-                    if (void_node == NULL) void_node = vn;
+                        pm_node_t *vn = pm_check_value_expression(parser, (pm_node_t *) cast->statements);
+                        if (vn == NULL) return NULL;
+                        if (void_node == NULL) void_node = vn;
+                    }
 
                     for (pm_rescue_node_t *rescue_clause = cast->rescue_clause; rescue_clause != NULL; rescue_clause = rescue_clause->subsequent) {
                         pm_node_t *vn = pm_check_value_expression(parser, (pm_node_t *) rescue_clause->statements);
+                        
                         if (vn == NULL) {
+                            // https://bugs.ruby-lang.org/issues/21669
+                            if (parser->version >= PM_OPTIONS_VERSION_CRUBY_4_0) {
+                                return NULL;
+                            }
                             void_node = NULL;
                             break;
                         }
@@ -1076,6 +1084,12 @@ pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
 
                     if (cast->else_clause != NULL) {
                         node = (pm_node_t *) cast->else_clause;
+
+                        // https://bugs.ruby-lang.org/issues/21669
+                        if (parser->version >= PM_OPTIONS_VERSION_CRUBY_4_0) {
+                            pm_node_t *vn = pm_check_value_expression(parser, node);
+                            if (vn != NULL) return vn;
+                        }
                     } else {
                         return void_node;
                     }
@@ -1083,6 +1097,30 @@ pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
                     node = (pm_node_t *) cast->statements;
                 }
 
+                break;
+            }
+            case PM_CASE_NODE: {
+                // https://bugs.ruby-lang.org/issues/21669
+                if (parser->version < PM_OPTIONS_VERSION_CRUBY_4_0) {
+                    return NULL;
+                }
+
+                pm_case_node_t *cast = (pm_case_node_t *) node;
+                if (cast->else_clause == NULL) {
+                    return NULL;
+                }
+
+                pm_node_t *condition;
+                PM_NODE_LIST_FOREACH(&cast->conditions, index, condition) {
+                    assert(PM_NODE_TYPE_P(condition, PM_WHEN_NODE));
+
+                    pm_when_node_t *cast = (pm_when_node_t *) condition;
+                    pm_node_t  *vn = pm_check_value_expression(parser, (pm_node_t *) cast->statements);
+                    if (vn == NULL) return NULL;
+                    if (void_node == NULL) void_node = vn;
+                }
+
+                node = (pm_node_t *) cast->else_clause;
                 break;
             }
             case PM_ENSURE_NODE: {
